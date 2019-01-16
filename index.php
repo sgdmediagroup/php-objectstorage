@@ -3,6 +3,7 @@
 <!-- Read from bound VCAP_CREDENTIALS -->
 <?php
 
+	
 // use BlueMix VCAP_SERVICES environment 
 if ($services = getenv("VCAP_SERVICES")) {
   $services_json = json_decode($services, true);
@@ -15,90 +16,12 @@ if ($services = getenv("VCAP_SERVICES")) {
   throw new Exception('Not in Bluemix environment');
 }
 
+curl -X "POST" "https://iam.bluemix.net/oidc/token" \
+     -H 'Accept: application/json' \
+     -H 'Content-Type: application/x-www-form-urlencoded' \
+     --data-urlencode "apikey={vSYzfvzLh5SkHyn80U6Za_u0u1EL4CTQyV4dOFBY5FeX}" \
+     --data-urlencode "response_type=cloud_iam" \
+     --data-urlencode "grant_type=urn:ibm:params:oauth:grant-type:apikey"
+
+
 ?>
-<!-- Get Keystone Token -->
-<?php
-require 'vendor/autoload.php';
-$openstack = new OpenStack\OpenStack([
-    'authUrl' => $authUrl,
-    'region'  => $region,
-    'user'    => [
-        'id'       => $userId,
-        'password' => $password
-    ],
-    'scope' => [
-        'project' => ['id' => $projectId]
-    ]
-]);
-
-$identity = $openstack->identityV3();
-$token = $identity->generateToken([
-    'user' => [
-        'id'       => $userId,
-        'password' => $password
-    ]
-]);
-
-$tokenId = $token->getId();
-?>
-<!-- Create a container and upload a file -->
-
-<?php
-
-$containerName = 'MyNewContainer';
-$objectName = 'MyFile.txt';
-$objectContent = 'MyFile.txt';
-
-
-$service = $openstack->objectStoreV1();
-
-$container = $service->createContainer([
-    'name' => $containerName
-]);
-
-
-//Upload file
-
-$options = [
-    'name'    => $objectName,
-    'content' => $objectContent,
-];
-
-$object = $openstack->objectStoreV1()
-                    ->getContainer($containerName)
-                    ->createObject($options);
-?>
-
-<!-- Display Information -->
-
-<head>
-	<title>PHP & Object Storage</title>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	<link rel="stylesheet" href="style.css" />
-</head>
-<body>
-	<table>
-		<tr>
-			<td style='width: 30%;'><img class = 'newappIcon' src='images/objectStoreIcon50.png'>
-			</td>
-			<td>
-				<h1 id = "message">PHP application using bound Object Storage Instance...</h1>
-				<h3>Reading in VCAP Credentials from bound Object Storage Instance...</h2>
-				<p class='description'><?php echo "Credentials from bound Object Storage: "; ?></p>
-				<ul>
-					<li><?php echo "Auth URL: " . $authUrl; ?></li>
-					<li><?php echo "Region: " . $region; ?></li>
-					<li><?php echo "User Id: " . $userId; ?></li>
-					<li><?php echo "Password: " . $password; ?></li>
-					<li><?php echo "Project Id: " . $projectId; ?></li>
-				</ul>
-				<h3>Getting Keystone Token...</h3>
-				<p><?php echo "My Keystone token: " . $tokenId; ?></p>
-				<h3>Creating 'MyNewContainer' and uploading "MyFile.txt"...</h3>
-				<p>Check the bound instance of Object Storage to view these two items in the file browser.</p>
-		    </td>
-	</table>
-	<br />
-	<br />
-</body>
-</html>
